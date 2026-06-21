@@ -1,6 +1,9 @@
 import MessageInput from "./MessageInput";
 import MessageList from "./MessageList";
+import AddPeopleModal from "./AddPeopleModal";
+import ConfirmModal from "./ConfirmModal";
 import { formatLastSeen } from "../services/matrixClient";
+import { useState } from "react";
 
 function ChatWindow({
   room,
@@ -14,6 +17,8 @@ function ChatWindow({
   profileTarget,
   onOpenProfile,
   onOpenImagePreview,
+  onInviteUser,
+  onLeaveRoom,
   draft,
   onDraftChange,
   onTypingStop,
@@ -40,6 +45,8 @@ function ChatWindow({
           ? `${typingUsers[0]} and ${typingUsers[1]} are typing...`
           : `${typingUsers.slice(0, -1).join(", ")} and ${typingUsers[typingUsers.length - 1]} are typing...`;
   const typingAvatar = typingUsers[0]?.trim()?.charAt(0)?.toUpperCase() || "";
+  const [addPeopleOpen, setAddPeopleOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
 
   if (!room) {
     return (
@@ -87,8 +94,60 @@ function ChatWindow({
             </div>
           ) : null}
         </div>
-        <p className="chat-window__count">{messages.length} messages</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <p className="chat-window__count" style={{ margin: 0 }}>{messages.length} messages</p>
+          <div className="chat-window__actions">
+            <button
+              type="button"
+              className="header-action header-action--outline"
+              onClick={() => setAddPeopleOpen(true)}
+            >
+              + Add People
+            </button>
+
+            <button
+              type="button"
+              className="header-action header-action--danger"
+              onClick={() => setLeaveOpen(true)}
+            >
+              Leave Room
+            </button>
+          </div>
+        </div>
       </header>
+
+      <AddPeopleModal
+        open={addPeopleOpen}
+        onClose={() => setAddPeopleOpen(false)}
+        onInvite={async (userId) => {
+          if (typeof onInviteUser === "function") {
+            await onInviteUser(room?.roomId, userId);
+          } else {
+            if (!client || !room) throw new Error("Not connected or no room selected");
+            await client.invite(room.roomId, userId);
+          }
+        }}
+      />
+
+      <ConfirmModal
+        open={leaveOpen}
+        title="Leave Room?"
+        message="Are you sure you want to leave this room?"
+        onCancel={() => setLeaveOpen(false)}
+        onConfirm={async () => {
+          try {
+            if (typeof onLeaveRoom === "function") {
+              await onLeaveRoom(room?.roomId);
+            } else {
+              if (client && room) await client.leave(room.roomId);
+            }
+          } finally {
+            setLeaveOpen(false);
+          }
+        }}
+        confirmLabel="Leave"
+        cancelLabel="Cancel"
+      />
 
       <MessageList
         messages={messages}

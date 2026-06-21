@@ -5,6 +5,7 @@ import ImageModal from "./components/ImageModal";
 import Sidebar from "./components/Sidebar";
 import ProfileDrawer from "./components/ProfileDrawer";
 import NewChatModal from "./components/NewChatModal";
+import Toasts from "./components/Toasts";
 import {
   buildReceiptStatusMap,
   clearSession,
@@ -60,6 +61,7 @@ function App() {
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const [toasts, setToasts] = useState([]);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -70,6 +72,22 @@ function App() {
   const typingExpiryRef = useRef(null);
   const typingActiveRef = useRef(false);
   const typingRoomIdRef = useRef(null);
+
+  const sortRoomsByRecent = (roomsList) => {
+    if (!Array.isArray(roomsList)) return [];
+    const getLastTs = (room) => {
+      try {
+        const msgs = extractRoomMessages(room) || [];
+        if (msgs.length === 0) return 0;
+        const last = msgs[msgs.length - 1];
+        return Number(last?.ts) || 0;
+      } catch {
+        return 0;
+      }
+    };
+
+    return [...roomsList].sort((a, b) => getLastTs(b) - getLastTs(a));
+  };
 
   useEffect(() => {
     selectedRoomIdRef.current = selectedRoom?.roomId ?? null;
@@ -90,11 +108,11 @@ function App() {
 
     const handleTimeline = (event, room) => {
       if (!room || room.roomId !== selectedRoomIdRef.current) {
-        setRooms((currentRooms) => [...currentRooms]);
+        setRooms((currentRooms) => sortRoomsByRecent(currentRooms));
         return;
       }
 
-      setRooms((currentRooms) => [...currentRooms]);
+      setRooms((currentRooms) => sortRoomsByRecent(currentRooms));
 
       if (!isTextMessageEvent(event)) {
         return;
@@ -127,12 +145,12 @@ function App() {
 
     const handleReceipt = (_event, room) => {
       if (!room || room.roomId !== selectedRoomIdRef.current) {
-        setRooms((currentRooms) => [...currentRooms]);
+        setRooms((currentRooms) => sortRoomsByRecent(currentRooms));
         return;
       }
 
       setReceiptMap(buildReceiptStatusMap(room, currentUserIdRef.current));
-      setRooms((currentRooms) => [...currentRooms]);
+      setRooms((currentRooms) => sortRoomsByRecent(currentRooms));
     };
 
     client.on("Room.receipt", handleReceipt);
@@ -203,8 +221,58 @@ function App() {
     }
   }, [theme]);
 
+  const addToast = (type, message, duration = 4000) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    setToasts((t) => [...t, { id, type, message, duration }]);
+    return id;
+  };
+
+  const dismissToast = (id) => {
+    setToasts((t) => t.filter((x) => x.id !== id));
+  };
+
   const openNewChat = () => setNewChatOpen(true);
   const closeNewChat = () => setNewChatOpen(false);
+
+  const handleInviteUserToRoom = async (roomId, userId) => {
+    if (!client) throw new Error("Not connected");
+    try {
+      await client.invite(roomId, userId);
+      addToast("success", `Invited ${userId} to the room`);
+
+      const nextRooms = client.getRooms?.() ?? [];
+      setRooms(sortRoomsByRecent(nextRooms));
+      const updated = client.getRoom?.(roomId) || nextRooms.find((r) => r.roomId === roomId) || null;
+      if (updated) {
+        setSelectedRoom(updated);
+        setMessages(extractRoomMessages(updated));
+        setReceiptMap(buildReceiptStatusMap(updated, currentUserId));
+      }
+    } catch (err) {
+      addToast("error", `Invite failed: ${err?.message || String(err)}`);
+      throw err;
+    }
+  };
+
+  const handleLeaveRoom = async (roomId) => {
+    if (!client) throw new Error("Not connected");
+    try {
+      await client.leave(roomId);
+      addToast("success", "You left the room");
+
+      setRooms((prev) => sortRoomsByRecent(prev.filter((r) => r.roomId !== roomId)));
+
+      // pick another room to navigate to
+      const remaining = (client.getRooms?.() ?? []).filter((r) => r.roomId !== roomId);
+      const next = remaining[0] || null;
+      setSelectedRoom(next);
+      setMessages(next ? extractRoomMessages(next) : []);
+      setReceiptMap(next ? buildReceiptStatusMap(next, currentUserId) : {});
+    } catch (err) {
+      addToast("error", `Failed to leave room: ${err?.message || String(err)}`);
+      throw err;
+    }
+  };
 
   const createOrOpenDM = async (userId) => {
     if (!client) {
@@ -247,7 +315,7 @@ function App() {
       }
 
       // Refresh rooms and select created room
-      const nextRooms = client.getRooms();
+      const nextRooms = sortRoomsByRecent(client.getRooms());
       setRooms(nextRooms);
       const newRoom = client.getRoom?.(roomId) || nextRooms.find((x) => x.roomId === roomId) || null;
 
@@ -368,7 +436,7 @@ function App() {
           return;
         }
 
-        const nextRooms = restoredClient.getRooms();
+        const nextRooms = sortRoomsByRecent(restoredClient.getRooms());
         const firstRoom = nextRooms[0] ?? null;
 
         setClient(restoredClient);
@@ -579,7 +647,7 @@ function App() {
       await nextClient.startClient({ initialSyncLimit: 20 });
       await preparedPromise;
 
-      const nextRooms = nextClient.getRooms();
+      const nextRooms = sortRoomsByRecent(nextClient.getRooms());
       const firstRoom = nextRooms[0] ?? null;
 
       setClient(nextClient);
@@ -862,6 +930,8 @@ function App() {
         profileTarget={selectedProfile}
         onOpenProfile={handleOpenProfileDrawer}
         onOpenImagePreview={handleOpenImagePreview}
+        onInviteUser={handleInviteUserToRoom}
+        onLeaveRoom={handleLeaveRoom}
         draft={draft}
         onDraftChange={handleDraftChange}
         onTypingStop={handleTypingStop}
@@ -880,6 +950,7 @@ function App() {
 
       <ImageModal open={Boolean(imagePreview)} image={imagePreview} onClose={handleCloseImagePreview} />
       <NewChatModal open={newChatOpen} onClose={closeNewChat} onCreateOrOpen={createOrOpenDM} />
+      <Toasts toasts={toasts} onDismiss={dismissToast} />
     </main>
   );
 }

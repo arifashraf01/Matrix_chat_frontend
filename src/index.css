@@ -47,7 +47,7 @@ body,
 body {
   margin: 0;
   overflow: hidden;
-  background: #f7f8ff;
+  background: var(--bg);
 
   transition:
     background-color var(--transition-duration) ease,

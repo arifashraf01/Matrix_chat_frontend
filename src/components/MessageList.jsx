@@ -180,7 +180,7 @@ function MessageList({ messages, room, currentUserId, receiptMap = {}, client, o
           return (
             <article
               key={message.id}
-              className={`message-card${isOwnMessage ? " message-card--own" : ""}`}
+              className={`message-card${isOwnMessage ? " message-card--own" : " message-card--other"}`}
             >
               <div className="message-card__meta">
                 <span className="message-card__sender">{senderName}</span>
