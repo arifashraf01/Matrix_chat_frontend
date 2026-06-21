@@ -1,6 +1,6 @@
 :root {
   color-scheme: light;
-  --bg: #fafafa;
+  --bg: #f7f8ff;
   --bg-accent: #ffffff;
   --panel: #ffffff;
   --border: #e5e7eb;
@@ -15,7 +15,7 @@
   line-height: 1.5;
   font-weight: 400;
   color: var(--text);
-  background: #fafafa;
+  background: #f7f8ff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -35,7 +35,7 @@ body,
 body {
   margin: 0;
   overflow: hidden;
-  background: #fafafa;
+  background: #f7f8ff;
 }
 
 button,

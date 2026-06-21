@@ -1,7 +1,8 @@
 import RoomItem from "./RoomItem";
 import {
   getRoomDisplayName,
-  getRoomLastMessagePreview,
+  getRoomLastMessageMeta,
+  getRoomInitial,
   getRoomUnreadCount,
 } from "../services/matrixClient";
 
@@ -11,9 +12,7 @@ function Sidebar({ rooms, selectedRoomId, onSelectRoom, onLogout, currentUserId,
       <div className="sidebar__header">
         <p className="eyebrow">Matrix rooms</p>
         <h1>Inbox</h1>
-        <p className="sidebar__meta">
-          {status === "ready" ? "Connected" : "Loading"} {currentUserId ? `as ${currentUserId}` : ""}
-        </p>
+        <p className="sidebar__meta">{status === "ready" ? "Connected" : "Loading"}</p>
       </div>
 
       <div className="sidebar__list" role="list" aria-label="Matrix rooms">
@@ -27,7 +26,8 @@ function Sidebar({ rooms, selectedRoomId, onSelectRoom, onLogout, currentUserId,
             <RoomItem
               key={room.roomId}
               roomName={getRoomDisplayName(room)}
-              lastMessagePreview={getRoomLastMessagePreview(room, currentUserId)}
+              roomInitial={getRoomInitial(getRoomDisplayName(room))}
+              {...getRoomLastMessageMeta(room, currentUserId)}
               unreadCount={room.roomId === selectedRoomId ? 0 : getRoomUnreadCount(room)}
               active={room.roomId === selectedRoomId}
               onClick={() => onSelectRoom(room)}

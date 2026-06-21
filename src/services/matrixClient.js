@@ -196,6 +196,31 @@ export function getRoomLastMessagePreview(room, currentUserId) {
   return `${senderName}: ${lastMessage.body}`;
 }
 
+export function getRoomLastMessageMeta(room, currentUserId) {
+  const messages = extractRoomMessages(room);
+  const lastMessage = messages[messages.length - 1];
+
+  if (!lastMessage) {
+    return {
+      preview: "",
+      ts: null,
+    };
+  }
+
+  const member = room?.getMember?.(lastMessage.sender);
+  const senderName = lastMessage.sender === currentUserId ? "You" : member?.name || member?.rawDisplayName || lastMessage.sender;
+
+  return {
+    preview: `${senderName}: ${lastMessage.body}`,
+    ts: lastMessage.ts ?? null,
+  };
+}
+
+export function getRoomInitial(roomName) {
+  const firstChar = (roomName || "?").trim().charAt(0);
+  return firstChar ? firstChar.toUpperCase() : "?";
+}
+
 export async function markRoomAsRead(client, room) {
   if (!client || !room) {
     return;
