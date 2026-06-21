@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import ChatWindow from "./components/ChatWindow";
+import ImageModal from "./components/ImageModal";
 import Sidebar from "./components/Sidebar";
+import ProfileDrawer from "./components/ProfileDrawer";
+import NewChatModal from "./components/NewChatModal";
 import {
   buildReceiptStatusMap,
   clearSession,
@@ -9,6 +12,8 @@ import {
   extractRoomMessages,
   getRoomDisplayName,
   getRoomPresenceSummary,
+  getPresenceLabel,
+  formatLastSeen,
   getTypingUsers,
   loadSession,
   isTextMessageEvent,
@@ -27,6 +32,8 @@ const DEFAULT_PASSWORD = import.meta.env.VITE_MATRIX_PASSWORD || "SVkry::B-qe3Yf
 const TYPING_DEBOUNCE_MS = 2000;
 const TYPING_NOTIFICATION_TIMEOUT_MS = 5000;
 const TYPING_UI_EXPIRY_MS = 4000;
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 function App() {
   const [baseUrl, setBaseUrl] = useState(DEFAULT_BASE_URL);
@@ -41,6 +48,18 @@ function App() {
   const [receiptMap, setReceiptMap] = useState({});
   const [draft, setDraft] = useState("");
   const [typingUsers, setTypingUsers] = useState([]);
+  const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
+  const [newChatOpen, setNewChatOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem("theme") || "light";
+    } catch {
+      return "light";
+    }
+  });
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [imagePreview, setImagePreview] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -174,6 +193,77 @@ function App() {
       client?.stopClient?.();
     };
   }, [client]);
+
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute("data-theme", theme === "dark" ? "dark" : "light");
+      localStorage.setItem("theme", theme);
+    } catch {
+      // ignore
+    }
+  }, [theme]);
+
+  const openNewChat = () => setNewChatOpen(true);
+  const closeNewChat = () => setNewChatOpen(false);
+
+  const createOrOpenDM = async (userId) => {
+    if (!client) {
+      throw new Error("Not connected to Matrix server");
+    }
+
+    // Check for existing one-to-one room
+    const roomsList = client.getRooms?.() ?? [];
+    for (const r of roomsList) {
+      try {
+        if (r.getMyMembership?.() !== "join") continue;
+        const joined = r.getJoinedMembers?.() ?? [];
+        const hasTarget = joined.some((m) => m?.userId === userId);
+        if (!hasTarget) continue;
+        // consider one-to-one if only two joined members
+        if (joined.length === 2) {
+          setSelectedRoom(r);
+          setMessages(extractRoomMessages(r));
+          setReceiptMap(buildReceiptStatusMap(r, currentUserIdRef.current));
+          closeNewChat();
+          return;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // Create new direct room and invite user
+    try {
+      const createResp = await client.createRoom({
+        invite: [userId],
+        is_direct: true,
+        preset: "private_chat",
+        visibility: "private",
+      });
+
+      const roomId = createResp?.room_id || createResp?.roomId || null;
+      if (!roomId) {
+        throw new Error("Server did not return a room id");
+      }
+
+      // Refresh rooms and select created room
+      const nextRooms = client.getRooms();
+      setRooms(nextRooms);
+      const newRoom = client.getRoom?.(roomId) || nextRooms.find((x) => x.roomId === roomId) || null;
+
+      if (newRoom) {
+        setSelectedRoom(newRoom);
+        setMessages(extractRoomMessages(newRoom));
+        setReceiptMap(buildReceiptStatusMap(newRoom, currentUserIdRef.current));
+      }
+
+      closeNewChat();
+      return;
+    } catch (err) {
+      // Bubble up error message
+      throw new Error(err?.message || "Failed to create direct message");
+    }
+  };
 
   const clearTypingTimer = useCallback(() => {
     if (typingTimeoutRef.current) {
@@ -511,6 +601,7 @@ function App() {
 
   const handleSelectRoom = (room) => {
     selectRoom(room);
+    setIsProfileDrawerOpen(false);
   };
 
   const handleLogout = () => {
@@ -525,6 +616,7 @@ function App() {
     setPresenceMap({});
     setReceiptMap({});
     setTypingUsers([]);
+    setIsProfileDrawerOpen(false);
     setCurrentUserId("");
     setDraft("");
     setStatus("idle");
@@ -556,6 +648,65 @@ function App() {
     }
   };
 
+  const handleAttachImage = async (file) => {
+    if (!client || !selectedRoom || !file || isImageUploading) {
+      return;
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      setUploadError("Please choose a JPG, PNG, WEBP, or GIF image.");
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setUploadError("Image is too large. Please choose a file under 10 MB.");
+      return;
+    }
+
+    setUploadError("");
+    setError("");
+    setIsImageUploading(true);
+
+    try {
+      await stopTyping(selectedRoom.roomId);
+
+      const uploadResponse = await client.uploadContent(file, { includeFilename: true });
+      const mxcUrl = uploadResponse?.content_uri ?? uploadResponse?.contentUri ?? uploadResponse?.uri ?? "";
+
+      if (!mxcUrl) {
+        throw new Error("Matrix upload did not return a media URL.");
+      }
+
+      const imageInfo = {
+        mimetype: file.type,
+        size: file.size,
+      };
+
+      await client.sendImageMessage(selectedRoom.roomId, null, mxcUrl, imageInfo, file.name || "Image");
+
+      setMessages(extractRoomMessages(selectedRoom));
+      setReceiptMap(buildReceiptStatusMap(selectedRoom, currentUserIdRef.current));
+    } catch (uploadErr) {
+      setUploadError(
+        uploadErr instanceof Error ? uploadErr.message : "Image upload failed. Please try again.",
+      );
+    } finally {
+      setIsImageUploading(false);
+    }
+  };
+
+  const handleOpenImagePreview = (image) => {
+    if (!image?.src) {
+      return;
+    }
+
+    setImagePreview(image);
+  };
+
+  const handleCloseImagePreview = () => {
+    setImagePreview(null);
+  };
+
   const handleDraftChange = (nextValue) => {
     setDraft(nextValue);
 
@@ -575,9 +726,47 @@ function App() {
     void stopTyping(selectedRoom?.roomId);
   };
 
+  const handleOpenProfileDrawer = () => {
+    if (selectedRoom) {
+      setIsProfileDrawerOpen(true);
+    }
+  };
+
+  const handleCloseProfileDrawer = () => {
+    setIsProfileDrawerOpen(false);
+  };
+
   const selectedRoomTitle = selectedRoom ? getRoomDisplayName(selectedRoom) : "Select a room";
   const selectedRoomPresence = selectedRoom
     ? getRoomPresenceSummary(selectedRoom, currentUserId, presenceMap)
+    : null;
+  const selectedProfileMember = selectedRoom
+    ? (selectedRoom.getJoinedMembers?.() ?? []).find(
+        (member) => member?.userId && member.userId !== currentUserId,
+      ) ?? null
+    : null;
+  const selectedProfilePresence = selectedProfileMember
+    ? presenceMap[selectedProfileMember.userId] ??
+      normalizePresenceSnapshot(selectedProfileMember.user ?? selectedProfileMember, selectedProfileMember.userId)
+    : null;
+  const selectedProfile = selectedProfileMember
+    ? {
+        displayName:
+          selectedProfileMember.name ||
+          selectedProfileMember.rawDisplayName ||
+          selectedProfileMember.userId,
+        userId: selectedProfileMember.userId,
+        roomName: selectedRoomTitle,
+        avatarUrl: selectedProfileMember.getAvatarUrl?.(baseUrl, 128, 128, "crop") ?? null,
+        avatarInitial: (selectedProfileMember.name || selectedProfileMember.rawDisplayName || selectedProfileMember.userId)
+          .trim()
+          .charAt(0)
+          .toUpperCase(),
+        presenceLabel: getPresenceLabel(selectedProfilePresence),
+        lastActiveLabel:
+          selectedProfilePresence?.lastSeenTs ? formatLastSeen(selectedProfilePresence.lastSeenTs) : "",
+        presenceTone: selectedProfilePresence ? selectedProfilePresence.presence : "offline",
+      }
     : null;
 
   if (isBootstrapping) {
@@ -656,21 +845,41 @@ function App() {
         onLogout={handleLogout}
         currentUserId={currentUserId}
         status={status}
+        theme={theme}
+        onThemeChange={setTheme}
+        onOpenNewChat={openNewChat}
       />
 
       <ChatWindow
         room={selectedRoom}
         roomTitle={selectedRoomTitle}
+        client={client}
         messages={messages}
         currentUserId={currentUserId}
         presenceSummary={selectedRoomPresence}
         typingUsers={typingUsers}
         receiptMap={receiptMap}
+        profileTarget={selectedProfile}
+        onOpenProfile={handleOpenProfileDrawer}
+        onOpenImagePreview={handleOpenImagePreview}
         draft={draft}
         onDraftChange={handleDraftChange}
         onTypingStop={handleTypingStop}
         onSendMessage={handleSendMessage}
+        onAttachImage={handleAttachImage}
+        isImageUploading={isImageUploading}
+        uploadError={uploadError}
       />
+
+      <ProfileDrawer
+        open={isProfileDrawerOpen}
+        profile={selectedProfile}
+        roomName={selectedRoomTitle}
+        onClose={handleCloseProfileDrawer}
+      />
+
+      <ImageModal open={Boolean(imagePreview)} image={imagePreview} onClose={handleCloseImagePreview} />
+      <NewChatModal open={newChatOpen} onClose={closeNewChat} onCreateOrOpen={createOrOpenDM} />
     </main>
   );
 }

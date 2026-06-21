@@ -8,6 +8,18 @@
   --text-strong: #111827;
   --muted: #6b7280;
   --shadow: 0 20px 50px rgba(17, 24, 39, 0.06);
+  --card: #ffffff;
+  --primary: #5b4bff;
+  --selected-chat: #f3f4ff;
+  --outgoing-bubble: #5b4bff;
+  --outgoing-text: #ffffff;
+  --incoming-bubble: #ffffff;
+  --incoming-text: #111827;
+  --input-bg: #ffffff;
+  --online: #22c55e;
+  --receipt-seen: #3b82f6;
+  --receipt-delivered: #10b981;
+  --transition-duration: 220ms;
   --font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
 
@@ -15,7 +27,7 @@
   line-height: 1.5;
   font-weight: 400;
   color: var(--text);
-  background: #f7f8ff;
+  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -36,6 +48,34 @@ body {
   margin: 0;
   overflow: hidden;
   background: #f7f8ff;
+
+  transition:
+    background-color var(--transition-duration) ease,
+    color var(--transition-duration) ease,
+    border-color var(--transition-duration) ease;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1220;
+  --bg-accent: #0F172A;
+  --panel: #0F172A;
+  --border: #374151;
+  --text: #F9FAFB;
+  --text-strong: #F9FAFB;
+  --muted: #9CA3AF;
+  --shadow: 0 20px 50px rgba(2, 6, 23, 0.6);
+  --card: #1F2937;
+  --primary: #5b4bff;
+  --selected-chat: #2D3748;
+  --outgoing-bubble: #7C3AED;
+  --outgoing-text: #FFFFFF;
+  --incoming-bubble: #374151;
+  --incoming-text: #F9FAFB;
+  --input-bg: #1F2937;
+  --online: #22C55E;
+  --receipt-seen: #3B82F6;
+  --receipt-delivered: #9CA3AF;
 }
 
 button,

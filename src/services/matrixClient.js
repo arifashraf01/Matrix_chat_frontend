@@ -117,7 +117,7 @@ export function isTextMessageEvent(event) {
 
   const content = event.getContent?.() ?? {};
 
-  return ["m.text", "m.notice", "m.emote"].includes(content.msgtype);
+  return ["m.text", "m.notice", "m.emote", "m.image", "m.file"].includes(content.msgtype);
 }
 
 export function normalizeMessage(messageLike) {
@@ -126,19 +126,80 @@ export function normalizeMessage(messageLike) {
   }
 
   if (typeof messageLike.getType === "function") {
-    const content = messageLike.getContent?.() ?? {};
+    const wireContent = messageLike.getWireContent?.() ?? {};
+    const originalContent = messageLike.getOriginalContent?.() ?? {};
+    const content = {
+      ...wireContent,
+      ...originalContent,
+      ...messageLike.getContent?.(),
+    };
+    const file = content.file ?? {};
+    const info = content.info ?? {};
     const eventId = messageLike.getId?.() ?? null;
     const txnId = messageLike.getTxnId?.() ?? null;
     const status = messageLike.getAssociatedStatus?.() ?? messageLike.status ?? null;
+    const msgtype = content.msgtype ?? "m.text";
+    const mimeType = info.mimetype ?? file.mimetype ?? content.mimetype ?? null;
+    const hasThumbnail = Boolean(
+      content.thumbnail_url ||
+        file.thumbnail_url ||
+        info.thumbnail_url ||
+        info.thumbnail_file?.url ||
+        content.thumbnail_file?.url,
+    );
+    const sourceUrl =
+      content.url ??
+      file.url ??
+      content.file_url ??
+      content.file?.url ??
+      null;
+    const isImage =
+      msgtype === "m.image" ||
+      (msgtype === "m.file" && (Boolean(mimeType?.startsWith?.("image/")) || hasThumbnail || Boolean(sourceUrl)));
+    const mediaUrl =
+      (isImage ? sourceUrl : null) ??
+      content.thumbnail_url ??
+      file.thumbnail_url ??
+      info.thumbnail_url ??
+      info.thumbnail_file?.url ??
+      content.thumbnail_file?.url ??
+      null;
+    if (isImage) {
+      try {
+        console.debug("[matrixClient] raw image content:", content);
+        console.debug("[matrixClient] content.url:", content.url ?? null);
+        console.debug("[matrixClient] content.thumbnail_url:", content.thumbnail_url ?? null);
+        console.debug("[matrixClient] chosen mediaUrl (mxc or http):", mediaUrl);
+      } catch (e) {
+        // best-effort logging
+      }
+    }
 
     return {
       id: eventId ?? txnId ?? `${messageLike.getTs?.() ?? Date.now()}-${messageLike.getSender?.() ?? "unknown"}`,
       eventId,
       txnId,
       status,
+      eventType: messageLike.getType?.() ?? "m.room.message",
       sender: messageLike.getSender?.() || "Unknown sender",
       body: content.body ?? "",
       ts: messageLike.getTs?.() ?? Date.now(),
+      kind: isImage ? "image" : "text",
+      msgtype,
+      mediaUrl: isImage ? mediaUrl : null,
+      thumbnailUrl:
+        isImage
+          ? content.thumbnail_url ??
+            file.thumbnail_url ??
+            info.thumbnail_url ??
+            info.thumbnail_file?.url ??
+            content.thumbnail_file?.url ??
+            mediaUrl
+          : null,
+      imageInfo: isImage ? info : null,
+      mimeType: isImage ? mimeType : null,
+      altText: isImage ? content.body ?? "Image" : null,
+      rawContent: content,
     };
   }
 
@@ -147,9 +208,18 @@ export function normalizeMessage(messageLike) {
     eventId: messageLike.eventId ?? null,
     txnId: messageLike.txnId ?? null,
     status: messageLike.status ?? null,
+    eventType: messageLike.eventType ?? "m.room.message",
     sender: messageLike.sender ?? "Unknown sender",
     body: messageLike.body ?? "",
     ts: messageLike.ts ?? Date.now(),
+    kind: messageLike.kind ?? "text",
+    msgtype: messageLike.msgtype ?? "m.text",
+    mediaUrl: messageLike.mediaUrl ?? null,
+    thumbnailUrl: messageLike.thumbnailUrl ?? null,
+    imageInfo: messageLike.imageInfo ?? null,
+    mimeType: messageLike.mimeType ?? null,
+    altText: messageLike.altText ?? null,
+    rawContent: messageLike.rawContent ?? null,
   };
 }
 
@@ -219,6 +289,102 @@ export function getRoomLastMessageMeta(room, currentUserId) {
 export function getRoomInitial(roomName) {
   const firstChar = (roomName || "?").trim().charAt(0);
   return firstChar ? firstChar.toUpperCase() : "?";
+}
+
+export function getMessageHttpUrl(client, message) {
+  const sourceUrl = message?.mediaUrl || message?.thumbnailUrl;
+
+  if (!sourceUrl) return "";
+
+  if (sourceUrl.startsWith("http://") || sourceUrl.startsWith("https://")) {
+    return sourceUrl;
+  }
+  try {
+    if (typeof client?.mxcUrlToHttp === "function") {
+      const url = client.mxcUrlToHttp(sourceUrl);
+      console.debug("[matrixClient] mxc -> http (via client.mxcUrlToHttp):", sourceUrl, "=>", url);
+      return url || sourceUrl;
+    }
+
+    const fallback = mxcToHttpFallback(client, sourceUrl);
+    console.debug("[matrixClient] mxc -> http (fallback):", sourceUrl, "=>", fallback);
+    return fallback;
+  } catch (e) {
+    console.debug("[matrixClient] getMessageHttpUrl error for:", sourceUrl, e);
+    return sourceUrl;
+  }
+}
+
+function mxcToHttpFallback(client, mxcUrl) {
+  if (!mxcUrl || typeof mxcUrl !== "string") return "";
+  if (/^https?:\/\//i.test(mxcUrl)) return mxcUrl;
+
+  const m = mxcUrl.match(/^mxc:\/\/(?<server>[^/]+)\/(?<media>.+)$/);
+  if (!m || !m.groups) return mxcUrl;
+
+  const server = m.groups.server;
+  const mediaId = m.groups.media;
+
+  const base = client?.baseUrl || client?.opts?.baseUrl || DEFAULT_BASE_URL;
+
+  try {
+    const url = new URL(base);
+    const baseNoSlash = url.origin + url.pathname.replace(/\/+$/u, "");
+    return `${baseNoSlash}/_matrix/media/r0/download/${encodeURIComponent(server)}/${encodeURIComponent(mediaId)}`;
+  } catch {
+    return `${base}/_matrix/media/r0/download/${encodeURIComponent(server)}/${encodeURIComponent(mediaId)}`;
+  }
+}
+
+export function getMessageDisplayUrl(client, message) {
+  const rawUrl = getMessageHttpUrl(client, message);
+
+  if (!rawUrl) {
+    return "";
+  }
+
+  const accessToken = client?.getAccessToken?.();
+
+  if (!accessToken) {
+    return rawUrl;
+  }
+
+  try {
+    const url = new URL(rawUrl);
+
+    if (!url.searchParams.has("access_token")) {
+      url.searchParams.set("access_token", accessToken);
+    }
+
+    return url.toString();
+  } catch {
+    const separator = rawUrl.includes("?") ? "&" : "?";
+    return `${rawUrl}${separator}access_token=${encodeURIComponent(accessToken)}`;
+  }
+}
+
+export async function downloadMatrixMediaBlob(client, sourceUrl) {
+  if (!client || !sourceUrl) {
+    return null;
+  }
+
+  const downloadUrl = /^https?:\/\//i.test(sourceUrl)
+    ? sourceUrl
+    : (typeof client?.mxcUrlToHttp === "function" ? client.mxcUrlToHttp(sourceUrl) : mxcToHttpFallback(client, sourceUrl)) || sourceUrl;
+
+  const accessToken = client.getAccessToken?.();
+
+  const headers = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : {};
+
+  const blob = await client.http.requestOtherUrl("GET", downloadUrl, undefined, {
+    rawResponseBody: true,
+    json: false,
+    headers,
+  });
+
+  return blob ?? null;
 }
 
 export async function markRoomAsRead(client, room) {

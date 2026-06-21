@@ -5,15 +5,22 @@ import { formatLastSeen } from "../services/matrixClient";
 function ChatWindow({
   room,
   roomTitle,
+  client,
   messages,
   currentUserId,
   presenceSummary,
   typingUsers,
   receiptMap,
+  profileTarget,
+  onOpenProfile,
+  onOpenImagePreview,
   draft,
   onDraftChange,
   onTypingStop,
   onSendMessage,
+  onAttachImage,
+  isImageUploading,
+  uploadError,
 }) {
   const presenceLabel = presenceSummary
     ? presenceSummary.tone === "online"
@@ -49,9 +56,30 @@ function ChatWindow({
   return (
     <section className="chat-window">
       <header className="chat-window__header">
-        <div>
-          <p className="eyebrow">Chat window</p>
-          <h2>{roomTitle}</h2>
+        <div className="chat-window__header-main">
+          <button
+            type="button"
+            className="chat-window__profile-trigger"
+            onClick={onOpenProfile}
+            disabled={!profileTarget}
+          >
+            <span className="chat-window__profile-avatar" aria-hidden="true">
+              {profileTarget?.avatarUrl ? (
+                <img
+                  src={profileTarget.avatarUrl}
+                  alt=""
+                  className="chat-window__profile-avatar-image"
+                />
+              ) : (
+                profileTarget?.avatarInitial || roomTitle.charAt(0).toUpperCase()
+              )}
+            </span>
+
+            <div className="chat-window__profile-copy">
+              <p className="eyebrow">Chat window</p>
+              <h2>{profileTarget?.displayName || roomTitle}</h2>
+            </div>
+          </button>
           {presenceSummary ? (
             <div className={`chat-window__presence chat-window__presence--${presenceSummary.tone}`}>
               <span className="chat-window__presence-dot" aria-hidden="true" />
@@ -67,6 +95,8 @@ function ChatWindow({
         room={room}
         currentUserId={currentUserId}
         receiptMap={receiptMap}
+        client={client}
+        onOpenImagePreview={onOpenImagePreview}
       />
 
       {typingText ? (
@@ -83,6 +113,9 @@ function ChatWindow({
         onChange={onDraftChange}
         onTypingStop={onTypingStop}
         onSendMessage={onSendMessage}
+        onAttachImage={onAttachImage}
+        isImageUploading={isImageUploading}
+        uploadError={uploadError}
         disabled={!room}
       />
     </section>
