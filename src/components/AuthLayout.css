@@ -1,0 +1,544 @@
+/*
+  AuthLayout.css
+  ──────────────────────────────────────────────────────────────────────────────
+  Self-contained styles for all authentication pages (Sign In + Sign Up).
+
+  Design intent: clean modern SaaS — similar to Linear, Clerk, Supabase Auth.
+    • White backgrounds, dark text, purple (#5b4bff) accents
+    • Left panel: soft purple-gradient tinted background with frosted feature cards
+    • Right panel: centered form card with generous padding and subtle shadow
+    • Fully responsive: stacks vertically on mobile, form panel first
+
+  Scoped under `.auth-shell` to stay immune to the app's global dark-mode theme.
+  ──────────────────────────────────────────────────────────────────────────────
+*/
+
+/* ═══════════════════════════════ DESIGN TOKENS ═══════════════════════════════ */
+.auth-shell {
+  /* Colour palette */
+  --au-white:           #ffffff;
+  --au-bg-left:         #f7f8fa;
+  --au-text:            #111827;
+  --au-muted:           #6b7280;
+  --au-border:          #e5e7eb;
+  --au-primary:         #5b4bff;
+  --au-primary-hover:   #4535d4;
+  --au-accent:          #10b981;
+  --au-input-bg:        #ffffff;
+  --au-error-text:      #dc2626;
+  --au-error-bg:        #fef2f2;
+  --au-error-border:    #fecaca;
+  --au-success-text:    #059669;
+  --au-success-bg:      #f0fdf4;
+  --au-success-border:  #bbf7d0;
+
+  /* Elevation */
+  --au-card-shadow:     0 4px 6px rgba(17, 24, 39, 0.04), 0 10px 40px rgba(17, 24, 39, 0.08);
+
+  /* Geometry */
+  --au-radius-card:     20px;
+  --au-radius-input:    12px;
+  --au-radius-btn:      12px;
+  --au-radius-feature:  14px;
+
+  /* Typography */
+  --au-font:            "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+
+  /* ── Shell layout ── */
+  display: flex;
+  min-height: 100dvh;
+  background: #f7f8fa;
+  font-family: var(--au-font);
+  color: var(--au-text);
+  overflow-y: auto;
+}
+
+/* ═══════════════════════════════ LEFT — MARKETING PANEL ═══════════════════════════════ */
+.auth-left {
+  position: relative;
+  flex: 0 0 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px 24px;
+  background: transparent;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── Decorative blobs ── */
+.auth-left__blobs {
+  display: none;
+}
+
+.auth-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+}
+
+.auth-blob--1 {
+  width: 440px;
+  height: 440px;
+  background: rgba(220, 222, 230, 0.45);
+  top: -140px;
+  right: -100px;
+}
+
+.auth-blob--2 {
+  width: 320px;
+  height: 320px;
+  background: rgba(210, 214, 224, 0.3);
+  bottom: -100px;
+  left: -80px;
+}
+
+.auth-blob--3 {
+  width: 220px;
+  height: 220px;
+  background: rgba(230, 232, 238, 0.35);
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ── All marketing content sits above the blobs ── */
+.auth-marketing {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Brand logo ── */
+.auth-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 56px;
+  text-decoration: none;
+  color: var(--au-text);
+}
+
+.auth-logo span {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--au-text);
+}
+
+/* ── Marketing body ── */
+.auth-marketing__body {
+  max-width: 440px;
+}
+
+.auth-marketing__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--au-primary);
+  background: rgba(91, 75, 255, 0.08);
+  border: 1px solid rgba(91, 75, 255, 0.2);
+  border-radius: 100px;
+  padding: 4px 14px;
+  margin: 0 0 20px;
+}
+
+.auth-marketing__heading {
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1.1;
+  color: var(--au-text);
+  margin: 0 0 18px;
+}
+
+/* Span inside the heading renders a purple gradient — used for keyword emphasis */
+.auth-marketing__heading span {
+  background: linear-gradient(135deg, var(--au-primary) 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.auth-marketing__sub {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--au-muted);
+  margin: 0 0 36px;
+  max-width: 38ch;
+}
+
+/* ── Feature cards ── */
+.auth-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-feature-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 13px 16px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--au-radius-feature);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-feature-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(91, 75, 255, 0.1);
+}
+
+.auth-feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: rgba(91, 75, 255, 0.1);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.auth-feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.auth-feature-text strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--au-text);
+  line-height: 1.3;
+}
+
+.auth-feature-text span {
+  font-size: 0.82rem;
+  color: var(--au-muted);
+  line-height: 1.45;
+}
+
+/* ═══════════════════════════════ RIGHT — FORM PANEL ═══════════════════════════════ */
+.auth-right {
+  flex: 0 0 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 48px;
+  background: transparent;
+  min-width: 0;
+}
+
+/* The card that wraps the auth form */
+.auth-form-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--au-white);
+  border: 1px solid var(--au-border);
+  border-radius: var(--au-radius-card);
+  padding: 44px 48px;
+  box-shadow: var(--au-card-shadow);
+}
+
+/* ═══════════════════════════════ FORM CONTENT TYPOGRAPHY ═══════════════════════════════ */
+
+/* Small uppercase category label */
+.auth-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--au-primary);
+  margin: 0 0 14px;
+}
+
+/* Main form heading — h2 so the marketing h1 owns page rank */
+.auth-form-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+  color: var(--au-text);
+  margin: 0 0 8px;
+}
+
+/* Short explanatory copy below the heading */
+.auth-form-copy {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--au-muted);
+  margin: 0 0 28px;
+}
+
+/* ═══════════════════════════════ FORM FIELDS — LIGHT-MODE OVERRIDE ═══════════════════════════════ */
+/*
+  The global `.field` and `.primary-button` classes in App.css use dark-mode-aware
+  CSS variables. Override them inside .auth-shell so the auth pages are always light.
+*/
+
+.auth-shell .field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.auth-shell .field input {
+  width: 100%;
+  background: var(--au-input-bg);
+  color: var(--au-text);
+  border: 1px solid var(--au-border);
+  border-radius: var(--au-radius-input);
+  padding: 13px 16px;
+  font-size: 0.95rem;
+  font-family: var(--au-font);
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.auth-shell .field input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.auth-shell .field input:focus {
+  border-color: var(--au-primary);
+  box-shadow: 0 0 0 3px rgba(91, 75, 255, 0.14);
+}
+
+.auth-shell .field input:disabled {
+  opacity: 0.7;
+}
+
+/* Form grid — used by both .login-form and .signup-form */
+.auth-shell .login-form,
+.auth-shell .signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 8px;
+}
+
+/* Submit button */
+.auth-shell .primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px 20px;
+  background: var(--au-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--au-radius-btn);
+  font-size: 0.97rem;
+  font-weight: 700;
+  font-family: var(--au-font);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.auth-shell .primary-button:hover:not(:disabled) {
+  background: var(--au-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(91, 75, 255, 0.28);
+}
+
+.auth-shell .primary-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.auth-shell .primary-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ── Inline spinner for async button states ── */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: au-spin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes au-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Feedback messages ── */
+.alert-box {
+  /* Wrapper for form-level messages; no extra margin — gap from .login-form/.signup-form handles spacing */
+}
+
+.auth-shell .form-error {
+  font-size: 0.87rem;
+  color: var(--au-error-text);
+  background: var(--au-error-bg);
+  border: 1px solid var(--au-error-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.form-success {
+  font-size: 0.87rem;
+  color: var(--au-success-text);
+  background: var(--au-success-bg);
+  border: 1px solid var(--au-success-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Footer switch link ("Already have an account?") ── */
+.auth-footer-text {
+  font-size: 0.9rem;
+  color: var(--au-muted);
+  text-align: center;
+  margin: 22px 0 0;
+}
+
+.auth-footer-text a {
+  color: var(--au-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-footer-text a:hover {
+  text-decoration: underline;
+}
+
+/* ═══════════════════════════════ RESPONSIVE ═══════════════════════════════ */
+
+/* Tablet: reduce horizontal padding */
+@media (max-width: 1100px) {
+  .auth-left {
+    padding: 48px 40px;
+  }
+  .auth-right {
+    padding: 48px 32px;
+  }
+  .auth-form-card {
+    padding: 40px 36px;
+  }
+}
+
+/* Desktop: Center components, add outer margin, and bring points/fields closer */
+@media (min-width: 901px) {
+  .auth-shell {
+    justify-content: center;
+    align-items: center;
+    padding: 60px 8%;
+    gap: 60px;
+  }
+
+  .auth-left {
+    flex: 0 1 440px;
+    padding: 0;
+  }
+
+  .auth-right {
+    flex: 0 1 480px;
+    padding: 0;
+  }
+
+  .auth-marketing {
+    width: 100%;
+  }
+}
+
+
+/* Stack vertically below 900px */
+@media (max-width: 900px) {
+  .auth-shell {
+    flex-direction: column;
+  }
+
+  /* Form comes first on mobile — users want to get into the app */
+  .auth-left {
+    order: 2;
+    flex: none;
+    width: 100%;
+    padding: 40px 24px 44px;
+  }
+
+  .auth-right {
+    order: 1;
+    flex: none;
+    width: 100%;
+    padding: 40px 20px 32px;
+    min-height: auto;
+  }
+
+  .auth-logo {
+    margin-bottom: 36px;
+  }
+
+  .auth-marketing__heading {
+    font-size: 2rem;
+  }
+
+  /* 2-column grid for feature cards on tablet */
+  .auth-features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .auth-form-card {
+    max-width: 100%;
+    padding: 36px 28px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .auth-left {
+    padding: 32px 16px 36px;
+  }
+
+  /* Single column feature cards on phones */
+  .auth-features {
+    grid-template-columns: 1fr;
+  }
+
+  /* Hide the long subtitle on very small screens to save space */
+  .auth-marketing__sub {
+    display: none;
+  }
+
+  .auth-form-card {
+    padding: 28px 20px;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .auth-form-title {
+    font-size: 1.5rem;
+  }
+}

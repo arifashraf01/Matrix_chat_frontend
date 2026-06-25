@@ -8,6 +8,7 @@ import NewChatModal from "./components/NewChatModal";
 import Toasts from "./components/Toasts";
 import LandingPage from "./components/LandingPage";
 import SignupPage from "./components/SignupPage";
+import AuthLayout from "./components/AuthLayout";
 import {
   buildReceiptStatusMap,
   clearSession,
@@ -37,6 +38,35 @@ const TYPING_NOTIFICATION_TIMEOUT_MS = 5000;
 const TYPING_UI_EXPIRY_MS = 4000;
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
+/** Static marketing content for the Sign In left panel */
+const SIGN_IN_FEATURES = [
+  {
+    icon: "⚡",
+    title: "Instant Sync",
+    description: "All your rooms and messages load instantly on sign-in.",
+  },
+  {
+    icon: "🔒",
+    title: "Secure by Design",
+    description: "Your session is encrypted and stored only on this device.",
+  },
+  {
+    icon: "✅",
+    title: "Read Receipts",
+    description: "Know exactly when your messages have been seen.",
+  },
+  {
+    icon: "💬",
+    title: "Typing Indicators",
+    description: "See when others are composing a reply in real time.",
+  },
+  {
+    icon: "🟢",
+    title: "Presence Status",
+    description: "See who's online, away, or offline across all rooms.",
+  },
+];
 
 function App() {
   const [baseUrl, setBaseUrl] = useState(DEFAULT_BASE_URL);
@@ -880,63 +910,65 @@ function App() {
   // The Sign In page is shared by both /auth and /auth/login.
   // Defined as a constant to keep the JSX DRY across both route branches.
   const signInPage = (
-    <main className="app-shell app-shell--login">
-      <section className="login-card">
-        <p className="eyebrow">Matrix MVP</p>
-        <h1>Sign in to your rooms</h1>
-        <p className="login-card__copy">
-          Connect to Matrix, load your room list, and start chatting from the React UI.
-        </p>
+    <AuthLayout
+      heading={<>Welcome <span>Back!</span></>}
+      subheading="Sign in to your Matrix account and pick up right where you left off."
+      features={SIGN_IN_FEATURES}
+    >
+      <p className="auth-eyebrow">Matrix Chat</p>
+      <h2 className="auth-form-title">Sign in to your rooms</h2>
+      <p className="auth-form-copy">
+        Connect to Matrix, load your room list, and start chatting from the React UI.
+      </p>
 
-        <form className="login-form" onSubmit={handleLogin}>
-          <label className="field">
-            <span>Homeserver URL</span>
-            <input
-              value={baseUrl}
-              onChange={(event) => setBaseUrl(event.target.value)}
-              type="text"
-              autoComplete="off"
-              placeholder="https://matrix.org"
-            />
-          </label>
+      <form className="login-form" onSubmit={handleLogin}>
+        <label className="field">
+          <span>Homeserver URL</span>
+          <input
+            value={baseUrl}
+            onChange={(event) => setBaseUrl(event.target.value)}
+            type="text"
+            autoComplete="off"
+            placeholder="https://matrix.org"
+          />
+        </label>
 
-          <label className="field">
-            <span>Username</span>
-            <input
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              type="text"
-              autoComplete="username"
-              placeholder="@user:matrix.org"
-            />
-          </label>
+        <label className="field">
+          <span>Username</span>
+          <input
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            type="text"
+            autoComplete="username"
+            placeholder="@user:matrix.org"
+          />
+        </label>
 
-          <label className="field">
-            <span>Password</span>
-            <input
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              type="password"
-              autoComplete="current-password"
-              placeholder="Password"
-            />
-          </label>
+        <label className="field">
+          <span>Password</span>
+          <input
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            type="password"
+            autoComplete="current-password"
+            placeholder="Password"
+          />
+        </label>
 
-          {error ? <p className="form-error">{error}</p> : null}
+        {error ? <p className="form-error">{error}</p> : null}
 
-          <button className="primary-button" type="submit" disabled={status === "logging-in"}>
-            {status === "logging-in" ? "Connecting..." : "Login"}
-          </button>
-        </form>
+        <button className="primary-button" type="submit" disabled={status === "logging-in"}>
+          {status === "logging-in" ? "Connecting…" : "Login"}
+        </button>
+      </form>
 
-        <p className="signup-footer-text">
-          Don't have an account?{' '}
-          <a href="/auth/signup" onClick={(e) => { e.preventDefault(); navigate("/auth/signup"); }}>
-            Sign Up
-          </a>
-        </p>
-      </section>
-    </main>
+      <p className="auth-footer-text">
+        Don't have an account?{' '}
+        <a href="/auth/signup" onClick={(e) => { e.preventDefault(); navigate("/auth/signup"); }}>
+          Sign Up
+        </a>
+      </p>
+    </AuthLayout>
   );
 
   // /auth and /auth/login render the Sign In page when the user is unauthenticated.
