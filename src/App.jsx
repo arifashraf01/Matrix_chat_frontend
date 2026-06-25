@@ -6,6 +6,7 @@ import Sidebar from "./components/Sidebar";
 import ProfileDrawer from "./components/ProfileDrawer";
 import NewChatModal from "./components/NewChatModal";
 import Toasts from "./components/Toasts";
+import LandingPage from "./components/LandingPage";
 import {
   buildReceiptStatusMap,
   clearSession,
@@ -65,6 +66,23 @@ function App() {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  const navigate = (to) => {
+    window.history.pushState({}, "", to);
+    setCurrentPath(to);
+  };
+
   const selectedRoomIdRef = useRef(null);
   const currentUserIdRef = useRef("");
   const presenceMapRef = useRef({});
@@ -836,6 +854,10 @@ function App() {
         presenceTone: selectedProfilePresence ? selectedProfilePresence.presence : "offline",
       }
     : null;
+
+  if (currentPath === "/") {
+    return <LandingPage onNavigate={navigate} client={client} />;
+  }
 
   if (isBootstrapping) {
     return (
