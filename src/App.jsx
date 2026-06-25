@@ -7,6 +7,7 @@ import ProfileDrawer from "./components/ProfileDrawer";
 import NewChatModal from "./components/NewChatModal";
 import Toasts from "./components/Toasts";
 import LandingPage from "./components/LandingPage";
+import SignupPage from "./components/SignupPage";
 import {
   buildReceiptStatusMap,
   clearSession,
@@ -39,7 +40,14 @@ const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "i
 
 function App() {
   const [baseUrl, setBaseUrl] = useState(DEFAULT_BASE_URL);
-  const [username, setUsername] = useState(DEFAULT_USERNAME);
+  const [username, setUsername] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('username') || DEFAULT_USERNAME;
+    } catch {
+      return DEFAULT_USERNAME;
+    }
+  });
   const [password, setPassword] = useState(DEFAULT_PASSWORD);
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -677,10 +685,13 @@ function App() {
       setTypingUsers([]);
       setDraft("");
       setStatus("ready");
+      // Navigate away from the auth route so the chat shell renders.
+      // /chat falls through all explicit route guards and reaches the chat shell.
+      navigate("/chat");
     } catch (loginError) {
       nextClient.stopClient?.();
       setClient(null);
-      setStatus("error");
+      setStatus("idle");
       setError(loginError instanceof Error ? loginError.message : "Matrix login failed");
     }
   };
@@ -855,9 +866,86 @@ function App() {
       }
     : null;
 
+  // --- Explicit public routes (always accessible regardless of auth state) ---
+
   if (currentPath === "/") {
     return <LandingPage onNavigate={navigate} client={client} />;
   }
+
+  if (currentPath === "/auth/signup") {
+    const noop = () => {};
+    return <SignupPage onNavigate={navigate} onRegister={noop} addToast={noop} />;
+  }
+
+  // The Sign In page is shared by both /auth and /auth/login.
+  // Defined as a constant to keep the JSX DRY across both route branches.
+  const signInPage = (
+    <main className="app-shell app-shell--login">
+      <section className="login-card">
+        <p className="eyebrow">Matrix MVP</p>
+        <h1>Sign in to your rooms</h1>
+        <p className="login-card__copy">
+          Connect to Matrix, load your room list, and start chatting from the React UI.
+        </p>
+
+        <form className="login-form" onSubmit={handleLogin}>
+          <label className="field">
+            <span>Homeserver URL</span>
+            <input
+              value={baseUrl}
+              onChange={(event) => setBaseUrl(event.target.value)}
+              type="text"
+              autoComplete="off"
+              placeholder="https://matrix.org"
+            />
+          </label>
+
+          <label className="field">
+            <span>Username</span>
+            <input
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              type="text"
+              autoComplete="username"
+              placeholder="@user:matrix.org"
+            />
+          </label>
+
+          <label className="field">
+            <span>Password</span>
+            <input
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              type="password"
+              autoComplete="current-password"
+              placeholder="Password"
+            />
+          </label>
+
+          {error ? <p className="form-error">{error}</p> : null}
+
+          <button className="primary-button" type="submit" disabled={status === "logging-in"}>
+            {status === "logging-in" ? "Connecting..." : "Login"}
+          </button>
+        </form>
+
+        <p className="signup-footer-text">
+          Don't have an account?{' '}
+          <a href="/auth/signup" onClick={(e) => { e.preventDefault(); navigate("/auth/signup"); }}>
+            Sign Up
+          </a>
+        </p>
+      </section>
+    </main>
+  );
+
+  // /auth and /auth/login render the Sign In page when the user is unauthenticated.
+  // If client is already set (login just completed), fall through to the chat shell.
+  if ((currentPath === "/auth" || currentPath === "/auth/login") && !client) {
+    return signInPage;
+  }
+
+  // --- Guards for the authenticated chat shell ---
 
   if (isBootstrapping) {
     return (
@@ -871,59 +959,10 @@ function App() {
     );
   }
 
+  // Unauthenticated users on any unrecognised path are redirected to the landing page.
   if (!client) {
-    return (
-      <main className="app-shell app-shell--login">
-        <section className="login-card">
-          <p className="eyebrow">Matrix MVP</p>
-          <h1>Sign in to your rooms</h1>
-          <p className="login-card__copy">
-            Connect to Matrix, load your room list, and start chatting from the React UI.
-          </p>
-
-          <form className="login-form" onSubmit={handleLogin}>
-            <label className="field">
-              <span>Homeserver URL</span>
-              <input
-                value={baseUrl}
-                onChange={(event) => setBaseUrl(event.target.value)}
-                type="text"
-                autoComplete="off"
-                placeholder="https://matrix.org"
-              />
-            </label>
-
-            <label className="field">
-              <span>Username</span>
-              <input
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                type="text"
-                autoComplete="username"
-                placeholder="@user:matrix.org"
-              />
-            </label>
-
-            <label className="field">
-              <span>Password</span>
-              <input
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                type="password"
-                autoComplete="current-password"
-                placeholder="Password"
-              />
-            </label>
-
-            {error ? <p className="form-error">{error}</p> : null}
-
-            <button className="primary-button" type="submit" disabled={status === "logging-in"}>
-              {status === "logging-in" ? "Connecting..." : "Login"}
-            </button>
-          </form>
-        </section>
-      </main>
-    );
+    navigate("/");
+    return <LandingPage onNavigate={navigate} client={client} />;
   }
 
   return (

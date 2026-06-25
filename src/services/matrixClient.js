@@ -23,6 +23,52 @@ export async function loginWithPassword(client, { username, password }) {
   });
 }
 
+export async function registerWithPassword(client, { username, password, homeserverUrl }) {
+  try {
+    // Validate username doesn't contain spaces
+    if (username.includes(" ")) {
+      throw new Error("Username cannot contain spaces");
+    }
+
+    // Register the user
+    const registrationResponse = await client.register("m.login.password", {
+      username,
+      password,
+      auth: {
+        type: "m.login.dummy",
+      },
+    });
+
+    return registrationResponse;
+  } catch (error) {
+    // Handle common Matrix registration errors
+    const errorMessage = error?.message || "Registration failed";
+    
+    // Check for specific error types
+    if (errorMessage.includes("User already exists") || errorMessage.includes("username already taken")) {
+      throw new Error("Username already exists");
+    }
+    
+    if (errorMessage.includes("Invalid homeserver") || errorMessage.includes("Unable to connect")) {
+      throw new Error("Invalid homeserver URL");
+    }
+    
+    if (errorMessage.includes("Password too weak") || errorMessage.includes("password does not meet requirements")) {
+      throw new Error("Password does not meet requirements");
+    }
+    
+    if (errorMessage.includes("Registration disabled") || errorMessage.includes("registration disabled")) {
+      throw new Error("Registration is disabled on this server");
+    }
+    
+    if (errorMessage.includes("Network error") || errorMessage.includes("Failed to fetch")) {
+      throw new Error("Network error. Please check your connection.");
+    }
+    
+    throw error;
+  }
+}
+
 export function waitForSyncPrepared(client) {
   return new Promise((resolve, reject) => {
     const handleSync = (state) => {

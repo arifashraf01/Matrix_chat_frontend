@@ -64,7 +64,7 @@ export default function LandingPage({ onNavigate, client }) {
           </div>
 
           <h1>
-            Arif Ashraf <br />
+            Arif Ashraf's <br />
             <span>Matrix Chat</span>
           </h1>
 
