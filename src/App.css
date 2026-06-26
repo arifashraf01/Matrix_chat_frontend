@@ -262,6 +262,36 @@
   background: var(--selected-chat);
 }
 
+.sidebar__settings-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 16px;
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.sidebar__settings-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--border);
+  background: var(--selected-chat);
+}
+
+.sidebar__settings-btn:active {
+  transform: translateY(0);
+}
+
+
 .sidebar__empty {
   padding: 18px 12px;
   color: var(--muted);

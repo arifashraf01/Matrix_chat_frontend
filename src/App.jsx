@@ -6,6 +6,7 @@ import Sidebar from "./components/Sidebar";
 import ProfileDrawer from "./components/ProfileDrawer";
 import NewChatModal from "./components/NewChatModal";
 import Toasts from "./components/Toasts";
+import SettingsModal from "./components/SettingsModal";
 import LandingPage from "./components/LandingPage";
 import SignupPage from "./components/SignupPage";
 import AuthLayout from "./components/AuthLayout";
@@ -79,6 +80,7 @@ function App() {
     }
   });
   const [password, setPassword] = useState(DEFAULT_PASSWORD);
+  const [showPassword, setShowPassword] = useState(false);
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -90,6 +92,7 @@ function App() {
   const [typingUsers, setTypingUsers] = useState([]);
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
   const [newChatOpen, setNewChatOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
     try {
       return localStorage.getItem("theme") || "light";
@@ -946,13 +949,33 @@ function App() {
 
         <label className="field">
           <span>Password</span>
-          <input
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            type="password"
-            autoComplete="current-password"
-            placeholder="Password"
-          />
+          <div className="password-input-wrapper">
+            <input
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              placeholder="Password"
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
         </label>
 
         {error ? <p className="form-error">{error}</p> : null}
@@ -1003,12 +1026,10 @@ function App() {
         rooms={rooms}
         selectedRoomId={selectedRoom?.roomId ?? null}
         onSelectRoom={handleSelectRoom}
-        onLogout={handleLogout}
         currentUserId={currentUserId}
         status={status}
-        theme={theme}
-        onThemeChange={setTheme}
         onOpenNewChat={openNewChat}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       <ChatWindow
@@ -1044,6 +1065,16 @@ function App() {
       <ImageModal open={Boolean(imagePreview)} image={imagePreview} onClose={handleCloseImagePreview} />
       <NewChatModal open={newChatOpen} onClose={closeNewChat} onCreateOrOpen={createOrOpenDM} />
       <Toasts toasts={toasts} onDismiss={dismissToast} />
+
+      <SettingsModal
+        open={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentUserId={currentUserId}
+        baseUrl={baseUrl}
+        theme={theme}
+        onThemeChange={setTheme}
+        onLogout={handleLogout}
+      />
     </main>
   );
 }
