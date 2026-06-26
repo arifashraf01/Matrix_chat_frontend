@@ -6,7 +6,7 @@
   box-sizing: border-box;
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
-  gap: 20px;
+  gap: 0;
   overflow: hidden;
 }
 
@@ -112,8 +112,6 @@
 .sidebar,
 .chat-window {
   min-width: 0;
-  border-radius: 28px;
-  border: 1px solid var(--border);
   box-shadow: var(--shadow);
   backdrop-filter: none;
 }
@@ -1245,14 +1243,36 @@
   }
 }
 
+@media (min-width: 961px) {
+  .sidebar {
+    border: 1px solid var(--border);
+    border-right: none;
+    border-radius: 28px 0 0 28px;
+  }
+
+  .chat-window {
+    border: 1px solid var(--border);
+    border-radius: 0 28px 28px 0;
+  }
+}
+
 @media (max-width: 960px) {
   .app-shell {
     grid-template-columns: 1fr;
     height: 100svh;
+    gap: 0;
   }
 
   .sidebar {
     min-height: 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 28px 28px 0 0;
+  }
+
+  .chat-window {
+    border: 1px solid var(--border);
+    border-radius: 0 0 28px 28px;
   }
 
   .profile-drawer__panel {
@@ -1263,7 +1283,7 @@
 @media (max-width: 640px) {
   .app-shell {
     padding: 12px;
-    gap: 12px;
+    gap: 0;
     height: 100svh;
   }
 
