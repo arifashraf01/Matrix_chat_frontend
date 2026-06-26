@@ -7,12 +7,20 @@ import {
 } from "../services/matrixClient";
 
 function Sidebar({ rooms, selectedRoomId, onSelectRoom, currentUserId, status, onOpenNewChat = () => {}, onOpenSettings = () => {} }) {
+  const localUsername = currentUserId && currentUserId.startsWith("@")
+    ? currentUserId.split(":")[0].substring(1)
+    : currentUserId;
+
+  const metaText = status === "ready"
+    ? `Connected as ${localUsername}`
+    : "Loading";
+
   return (
     <aside className="sidebar">
       <div className="sidebar__header">
         <p className="eyebrow">Matrix rooms</p>
         <h1>Inbox</h1>
-        <p className="sidebar__meta">{status === "ready" ? "Connected" : "Loading"}</p>
+        <p className="sidebar__meta">{metaText}</p>
       </div>
 
       <div style={{ padding: "8px 12px 0 12px" }}>
