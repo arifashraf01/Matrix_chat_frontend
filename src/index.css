@@ -19,6 +19,7 @@
   --online: #22c55e;
   --receipt-seen: #3b82f6;
   --receipt-delivered: #10b981;
+  --chat-name-color: #2563eb;
   --transition-duration: 220ms;
   --font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
@@ -57,26 +58,28 @@ body {
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0b1220;
-  --bg-accent: #0F172A;
-  --panel: #0F172A;
-  --border: #374151;
+  --bg: #000000;
+  --bg-accent: #09090b;
+  --panel: #09090b;
+  --border: #222225;
   --text: #F9FAFB;
   --text-strong: #F9FAFB;
   --muted: #9CA3AF;
-  --shadow: 0 20px 50px rgba(2, 6, 23, 0.6);
-  --card: #1F2937;
+  --shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  --card: #121214;
   --primary: #5b4bff;
-  --selected-chat: #2D3748;
+  --selected-chat: #1c1c1e;
   --outgoing-bubble: #7C3AED;
   --outgoing-text: #FFFFFF;
-  --incoming-bubble: #374151;
+  --incoming-bubble: #18181b;
   --incoming-text: #F9FAFB;
-  --input-bg: #1F2937;
+  --input-bg: #121214;
   --online: #22C55E;
   --receipt-seen: #3B82F6;
   --receipt-delivered: #9CA3AF;
+  --chat-name-color: #60a5fa;
 }
+
 
 button,
 input {

@@ -121,7 +121,7 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  background: var(--panel);
+  background: var(--bg);
 }
 
 .sidebar__header,
@@ -395,9 +395,9 @@
 }
 
 .room-item__name {
-  font-size: 0.92rem;
+  font-size: 1.02rem;
   font-weight: 700;
-  color: #6d28d9;
+  color: var(--chat-name-color);
 }
 
 .room-item__toprow {
