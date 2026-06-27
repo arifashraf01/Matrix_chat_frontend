@@ -100,6 +100,16 @@ function App() {
       return "light";
     }
   });
+  const [chatWallpapers, setChatWallpapers] = useState(() => {
+    try {
+      const legacy = localStorage.getItem("chat-wallpaper");
+      const light = localStorage.getItem("chat-wallpaper-light") ?? (legacy || "");
+      const dark = localStorage.getItem("chat-wallpaper-dark") ?? (legacy || "");
+      return { light, dark };
+    } catch {
+      return { light: "", dark: "" };
+    }
+  });
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
@@ -279,6 +289,21 @@ function App() {
       // ignore
     }
   }, [theme]);
+
+  useEffect(() => {
+    try {
+      const activeWallpaper = chatWallpapers[theme];
+      if (activeWallpaper) {
+        document.documentElement.style.setProperty("--chat-wallpaper", activeWallpaper);
+      } else {
+        document.documentElement.style.removeProperty("--chat-wallpaper");
+      }
+      localStorage.setItem("chat-wallpaper-light", chatWallpapers.light || "");
+      localStorage.setItem("chat-wallpaper-dark", chatWallpapers.dark || "");
+    } catch {
+      // ignore
+    }
+  }, [theme, chatWallpapers]);
 
   const addToast = (type, message, duration = 4000) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -1073,6 +1098,10 @@ function App() {
         baseUrl={baseUrl}
         theme={theme}
         onThemeChange={setTheme}
+        chatWallpaper={chatWallpapers[theme] || ""}
+        onChatWallpaperChange={(color) =>
+          setChatWallpapers((prev) => ({ ...prev, [theme]: color }))
+        }
         onLogout={handleLogout}
       />
     </main>

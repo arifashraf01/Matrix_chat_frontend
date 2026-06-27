@@ -8,6 +8,8 @@ export default function SettingsModal({
   baseUrl,
   theme,
   onThemeChange,
+  chatWallpaper,
+  onChatWallpaperChange,
   onLogout,
 }) {
   useEffect(() => {
@@ -67,6 +69,31 @@ export default function SettingsModal({
                 >
                   <span className="theme-toggle__knob" />
                 </button>
+              </div>
+            </div>
+            <div className="settings-row">
+              <div className="settings-row__info">
+                <strong>Chat Wallpaper</strong>
+                <span>Pick a background color for the message area.</span>
+              </div>
+              <div className="wallpaper-controls">
+                <input
+                  type="color"
+                  className="wallpaper-picker"
+                  value={chatWallpaper || (theme === "dark" ? "#0c0c12" : "#edf0f5")}
+                  onChange={(e) => onChatWallpaperChange(e.target.value)}
+                  title="Pick wallpaper color"
+                />
+                {chatWallpaper ? (
+                  <button
+                    type="button"
+                    className="wallpaper-reset-btn"
+                    onClick={() => onChatWallpaperChange("")}
+                    title="Reset to default"
+                  >
+                    Reset
+                  </button>
+                ) : null}
               </div>
             </div>
           </section>

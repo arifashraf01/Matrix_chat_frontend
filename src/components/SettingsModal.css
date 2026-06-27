@@ -170,3 +170,55 @@
 .destructive-button:active {
   transform: translateY(0);
 }
+
+.wallpaper-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wallpaper-picker {
+  width: 42px;
+  height: 42px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 2px;
+  cursor: pointer;
+  background: transparent;
+  transition: border-color 0.18s;
+}
+
+.wallpaper-picker:hover {
+  border-color: var(--muted);
+}
+
+.wallpaper-picker::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.wallpaper-picker::-webkit-color-swatch {
+  border-radius: 6px;
+  border: none;
+}
+
+.wallpaper-picker::-moz-color-swatch {
+  border-radius: 6px;
+  border: none;
+}
+
+.wallpaper-reset-btn {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+
+.wallpaper-reset-btn:hover {
+  background: var(--selected-chat);
+  color: var(--text-strong);
+}

@@ -122,6 +122,7 @@
   min-height: 0;
   overflow: hidden;
   background: var(--bg);
+  border-right: 1px solid var(--border);
 }
 
 .sidebar .primary-button {
@@ -553,6 +554,7 @@
 .message-list {
   padding: 18px 12px 28px;
   overflow: auto;
+  background: var(--chat-wallpaper);
 }
 
 .chat-window--empty {

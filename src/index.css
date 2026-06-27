@@ -21,6 +21,7 @@
   --receipt-delivered: #10b981;
   --chat-name-color: #111827;
   --selected-chat-bg: #27272a;
+  --chat-wallpaper: #edf0f5;
   --transition-duration: 220ms;
   --font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
@@ -80,6 +81,7 @@ body {
   --receipt-delivered: #9CA3AF;
   --chat-name-color: #ffffff;
   --selected-chat-bg: #27272a;
+  --chat-wallpaper: #0c0c12;
 }
 
 
