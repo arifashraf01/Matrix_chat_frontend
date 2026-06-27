@@ -409,28 +409,49 @@ export function getMessageDisplayUrl(client, message) {
   }
 }
 
+function buildMediaDownloadUrls(client, mxcUrl) {
+  if (!mxcUrl || typeof mxcUrl !== "string") return [];
+  if (/^https?:\/\//i.test(mxcUrl)) return [mxcUrl];
+
+  const mxcMatch = mxcUrl.match(/^mxc:\/\/(?<server>[^/]+)\/(?<media>.+)$/);
+  if (!mxcMatch?.groups) return [];
+
+  const { server, media } = mxcMatch.groups;
+  const base = (client?.baseUrl || client?.opts?.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/u, "");
+  const encodedServer = encodeURIComponent(server);
+  const encodedMedia = encodeURIComponent(media);
+
+  return [
+    `${base}/_matrix/client/v1/media/download/${encodedServer}/${encodedMedia}`,
+    `${base}/_matrix/media/v3/download/${encodedServer}/${encodedMedia}`,
+    `${base}/_matrix/media/r0/download/${encodedServer}/${encodedMedia}`,
+  ];
+}
+
 export async function downloadMatrixMediaBlob(client, sourceUrl) {
   if (!client || !sourceUrl) {
     return null;
   }
 
-  const downloadUrl = /^https?:\/\//i.test(sourceUrl)
-    ? sourceUrl
-    : (typeof client?.mxcUrlToHttp === "function" ? client.mxcUrlToHttp(sourceUrl) : mxcToHttpFallback(client, sourceUrl)) || sourceUrl;
-
   const accessToken = client.getAccessToken?.();
-
   const headers = accessToken
     ? { Authorization: `Bearer ${accessToken}` }
     : {};
 
-  const blob = await client.http.requestOtherUrl("GET", downloadUrl, undefined, {
-    rawResponseBody: true,
-    json: false,
-    headers,
-  });
+  const urlsToTry = buildMediaDownloadUrls(client, sourceUrl);
 
-  return blob ?? null;
+  for (const url of urlsToTry) {
+    try {
+      const response = await fetch(url, { headers });
+      if (response.ok) {
+        return await response.blob();
+      }
+    } catch {
+      // Try next URL
+    }
+  }
+
+  return null;
 }
 
 export async function markRoomAsRead(client, room) {

@@ -80,18 +80,13 @@ function MessageList({ messages, room, currentUserId, receiptMap = {}, client, o
           fileThumbnailUrl: message.rawContent?.file?.thumbnail_url ?? null,
         });
 
-        if (!imageUrl && !displayUrl) {
+        if (!sourceUrl) {
           throw new Error("Unable to resolve image URL.");
         }
 
-        setImageSrcMap((currentMap) => ({
-          ...currentMap,
-          [message.id]: displayUrl || imageUrl,
-        }));
-
-        const blob = await downloadMatrixMediaBlob(client, sourceUrl || imageUrl);
+        const blob = await downloadMatrixMediaBlob(client, sourceUrl);
         if (!blob) {
-          return;
+          throw new Error("Download returned empty response.");
         }
 
         const objectUrl = URL.createObjectURL(blob);
@@ -108,22 +103,6 @@ function MessageList({ messages, room, currentUserId, receiptMap = {}, client, o
         }));
       } catch {
         failedRef.current.add(message.id);
-        const fallbackUrl = getMessageHttpUrl(client, message);
-        console.log("Matrix image fallback:", {
-          eventType: message.eventType,
-          msgtype: message.msgtype,
-          imageUrl: fallbackUrl,
-          displayUrl: getMessageDisplayUrl(client, message),
-          sourceUrl: message.mediaUrl || message.thumbnailUrl,
-          rawContent: message.rawContent,
-        });
-        if (fallbackUrl) {
-          setImageSrcMap((currentMap) => ({
-            ...currentMap,
-            [message.id]: fallbackUrl,
-          }));
-          return;
-        }
       } finally {
         loadingRef.current.delete(message.id);
       }
@@ -173,7 +152,7 @@ function MessageList({ messages, room, currentUserId, receiptMap = {}, client, o
           const receiptGlyph = receiptStatus ? getReceiptGlyphAscii(receiptStatus) : "";
           const imageUrl =
             message.kind === "image"
-              ? imageSrcMap[message.id] || getMessageDisplayUrl(client, message) || getMessageHttpUrl(client, message)
+              ? imageSrcMap[message.id] || ""
               : "";
           const hasRenderableImage = message.kind === "image" && Boolean(imageUrl);
 
@@ -207,7 +186,7 @@ function MessageList({ messages, room, currentUserId, receiptMap = {}, client, o
   alt={message.altText || "Image message"}
   loading="lazy"
   decoding="async"
-  crossOrigin="anonymous"
+
   onLoad={() => {
     console.log("IMAGE LOADED");
   }}

@@ -10,7 +10,7 @@
   --shadow: 0 20px 50px rgba(17, 24, 39, 0.06);
   --card: #ffffff;
   --primary: #5b4bff;
-  --selected-chat: #f3f4ff;
+  --selected-chat: #e4e4e7;
   --outgoing-bubble: #5b4bff;
   --outgoing-text: #ffffff;
   --incoming-bubble: #ffffff;
@@ -20,7 +20,7 @@
   --receipt-seen: #3b82f6;
   --receipt-delivered: #10b981;
   --chat-name-color: #111827;
-  --selected-chat-bg: #3390ec;
+  --selected-chat-bg: #27272a;
   --transition-duration: 220ms;
   --font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
@@ -79,7 +79,7 @@ body {
   --receipt-seen: #3B82F6;
   --receipt-delivered: #9CA3AF;
   --chat-name-color: #ffffff;
-  --selected-chat-bg: #2481cc;
+  --selected-chat-bg: #27272a;
 }
 
 
