@@ -72,7 +72,7 @@ function AddPeopleModal({ open, onClose, onInvite }) {
             ) : null}
 
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-              <button type="button" className="message-input__button" onClick={onClose} disabled={loading}>
+              <button type="button" className="secondary-button" onClick={onClose} disabled={loading}>
                 Cancel
               </button>
               <button type="submit" className="primary-button" disabled={loading}>

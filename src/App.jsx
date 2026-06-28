@@ -895,17 +895,46 @@ function App() {
   const selectedRoomPresence = selectedRoom
     ? getRoomPresenceSummary(selectedRoom, currentUserId, presenceMap)
     : null;
-  const selectedProfileMember = selectedRoom
-    ? (selectedRoom.getJoinedMembers?.() ?? []).find(
-        (member) => member?.userId && member.userId !== currentUserId,
-      ) ?? null
-    : null;
+  const joinedMembers = selectedRoom ? (selectedRoom.getJoinedMembers?.() ?? []) : [];
+  const otherMembers = joinedMembers.filter(
+    (member) => member?.userId && member.userId !== currentUserId,
+  );
+  const isGroupRoom = joinedMembers.length > 2;
+  const explicitRoomName = selectedRoom?.currentState?.getStateEvents('m.room.name', '')?.getContent()?.name;
+
+  const selectedProfileMember = otherMembers[0] ?? null;
   const selectedProfilePresence = selectedProfileMember
     ? presenceMap[selectedProfileMember.userId] ??
       normalizePresenceSnapshot(selectedProfileMember.user ?? selectedProfileMember, selectedProfileMember.userId)
     : null;
-  const selectedProfile = selectedProfileMember
-    ? {
+
+  let selectedProfile = null;
+  if (selectedRoom) {
+    if (isGroupRoom) {
+      const fallbackName = otherMembers.length > 0
+        ? `${otherMembers[0].name || otherMembers[0].rawDisplayName || otherMembers[0].userId} +${otherMembers.length - 1}`
+        : "Empty Group";
+      const displayName = explicitRoomName || fallbackName;
+      selectedProfile = {
+        isGroup: true,
+        displayName,
+        userId: selectedRoom.roomId,
+        roomName: selectedRoomTitle,
+        avatarUrl: selectedRoom.getAvatarUrl?.(baseUrl, 128, 128, "crop") ?? null,
+        avatarInitial: explicitRoomName
+          ? explicitRoomName.trim().charAt(0).toUpperCase()
+          : (otherMembers[0]?.name || otherMembers[0]?.rawDisplayName || "G").trim().charAt(0).toUpperCase(),
+        memberCount: joinedMembers.length,
+        members: joinedMembers.map((m) => ({
+          userId: m.userId,
+          displayName: m.name || m.rawDisplayName || m.userId,
+          avatarUrl: m.getAvatarUrl?.(baseUrl, 128, 128, "crop") ?? null,
+          avatarInitial: (m.name || m.rawDisplayName || m.userId).trim().charAt(0).toUpperCase()
+        })).sort((a, b) => a.displayName.localeCompare(b.displayName))
+      };
+    } else if (selectedProfileMember) {
+      selectedProfile = {
+        isGroup: false,
         displayName:
           selectedProfileMember.name ||
           selectedProfileMember.rawDisplayName ||
@@ -921,8 +950,9 @@ function App() {
         lastActiveLabel:
           selectedProfilePresence?.lastSeenTs ? formatLastSeen(selectedProfilePresence.lastSeenTs) : "",
         presenceTone: selectedProfilePresence ? selectedProfilePresence.presence : "offline",
-      }
-    : null;
+      };
+    }
+  }
 
   // --- Explicit public routes (always accessible regardless of auth state) ---
 

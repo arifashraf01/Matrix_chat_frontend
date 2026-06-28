@@ -31,7 +31,7 @@ function ConfirmModal({ open, title, message, onCancel, onConfirm, confirmLabel 
         <div className="image-modal__body" style={{ padding: 20 }}>
           <p style={{ marginBottom: 18 }}>{message}</p>
           <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-            <button type="button" className="message-input__button" onClick={onCancel}>{cancelLabel}</button>
+            <button type="button" className="secondary-button" onClick={onCancel}>{cancelLabel}</button>
             <button type="button" className="primary-button" onClick={onConfirm}>{confirmLabel}</button>
           </div>
         </div>

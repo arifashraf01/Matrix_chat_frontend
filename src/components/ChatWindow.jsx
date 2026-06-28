@@ -83,8 +83,15 @@ function ChatWindow({
             </span>
 
             <div className="chat-window__profile-copy">
-              <p className="eyebrow">Chat window</p>
-              <h2>{profileTarget?.displayName || roomTitle}</h2>
+              <p className="eyebrow">{profileTarget?.isGroup ? "Group chat" : "Chat window"}</p>
+              <h2 style={{ marginBottom: profileTarget?.isGroup ? 2 : undefined }}>
+                {profileTarget?.displayName || roomTitle}
+              </h2>
+              {profileTarget?.isGroup && (
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0, fontWeight: 400 }}>
+                  {profileTarget.memberCount} members
+                </p>
+              )}
             </div>
           </button>
           {presenceSummary ? (

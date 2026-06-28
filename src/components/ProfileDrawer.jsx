@@ -64,29 +64,62 @@ function ProfileDrawer({ open, profile, roomName, onClose }) {
           </div>
 
           <dl className="profile-drawer__details">
-            <div className="profile-drawer__field">
-              <dt>Matrix ID</dt>
-              <dd>{profile.userId}</dd>
-            </div>
+            {profile.isGroup ? (
+              <>
+                <div className="profile-drawer__field">
+                  <dt>Members</dt>
+                  <dd>{profile.memberCount} total</dd>
+                </div>
+                <div className="profile-drawer__field">
+                  <dt>Room</dt>
+                  <dd>{roomName}</dd>
+                </div>
+                <div className="profile-drawer__members-list" style={{ marginTop: 24 }}>
+                  <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 12 }}>Member List</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {profile.members.map((m) => (
+                      <div key={m.userId} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div className="profile-drawer__avatar" style={{ width: 32, height: 32, minWidth: 32, ...(m.avatarUrl ? {} : { backgroundColor: getAvatarBackground(m.displayName) }) }}>
+                          {m.avatarUrl ? (
+                            <img src={m.avatarUrl} alt="" className="profile-drawer__avatar-image" />
+                          ) : (
+                            <span className="profile-drawer__avatar-letter" style={{ fontSize: '1rem' }}>{m.avatarInitial}</span>
+                          )}
+                        </div>
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', fontSize: '0.875rem' }}>{m.displayName}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{m.userId}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="profile-drawer__field">
+                  <dt>Matrix ID</dt>
+                  <dd>{profile.userId}</dd>
+                </div>
 
-            <div className="profile-drawer__field">
-              <dt>Status</dt>
-              <dd className={`profile-drawer__status profile-drawer__status--${profile.presenceTone}`}>
-                {profile.presenceLabel}
-              </dd>
-            </div>
+                <div className="profile-drawer__field">
+                  <dt>Status</dt>
+                  <dd className={`profile-drawer__status profile-drawer__status--${profile.presenceTone}`}>
+                    {profile.presenceLabel}
+                  </dd>
+                </div>
 
-            <div className="profile-drawer__field">
-              <dt>Last Active</dt>
-              <dd>{profile.lastActiveLabel || "Unknown"}</dd>
-            </div>
+                <div className="profile-drawer__field">
+                  <dt>Last Active</dt>
+                  <dd>{profile.lastActiveLabel || "Unknown"}</dd>
+                </div>
 
-            <div className="profile-drawer__field">
-              <dt>Room</dt>
-              <dd>{roomName}</dd>
-            </div>
-
-            
+                <div className="profile-drawer__field">
+                  <dt>Room</dt>
+                  <dd>{roomName}</dd>
+                </div>
+              </>
+            )}
           </dl>
         </div>
       </aside>
